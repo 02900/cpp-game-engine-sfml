@@ -4,7 +4,8 @@
             "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/opt/homebrew/Cellar/sfml/2.6.1/**"
+                "/opt/homebrew/Cellar/sfml/2.6.1/**",
+                "${workspaceFolder}/src/imgui-1.90.1"
             ],
             "defines": [],
             "macFrameworkPath": [

@@ -1,0 +1,6 @@
+*.o
+*.DS_Store
+bin/
+src/imgui-1.90.1/
+src/imgui-sfml-2.6/
+notes.md
