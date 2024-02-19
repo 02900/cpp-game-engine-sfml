@@ -6,8 +6,61 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 
+void loadFromFile(const std::string &filename)
+{
+    std::ifstream fin(filename);
+
+    if (!fin.is_open())
+    {
+        std::cout << "Error opening file: " << filename << std::endl;
+        exit(-1);
+    }
+
+    std::string lineID;
+    int wWidth, wHeight;
+    fin >> lineID >> wWidth >> wHeight;
+    std::cout << "Window width: " << wWidth << " Window height: " << wHeight << std::endl;
+
+    std::string fontPath;
+    int fontSize;
+    int fontColorR, fontColorG, fontColorB;
+    fin >> lineID >> fontPath >> fontSize >> fontColorR >> fontColorG >> fontColorB;
+    std::cout << "Font path: " << fontPath << " Font size: " << fontSize << " Font color: " << fontColorR << " " << fontColorG << " " << fontColorB << std::endl;
+
+    std::string name;
+    int posX, posY;
+    int velX, velY;
+    int colorR, colorG, colorB;
+    int radius;
+    int width, hegiht;
+
+    while (fin >> lineID)
+    {
+        if (lineID == "Circle")
+        {
+            fin >> name >> posX >> posY >> velX >> velY >> colorR >> colorG >> colorB >> radius;
+            std::cout << lineID << " " << name << " " << posX << " " << posY << " " << velX << " " << velY << " " << colorR << " " << colorG << " " << colorB << " " << radius << std::endl;
+        }
+
+        else if (lineID == "Rectangle")
+        {
+            fin >> name >> posX >> posY >> velX >> velY >> colorR >> colorG >> colorB >> width >> hegiht;
+            std::cout << lineID << " " << name << " " << posX << " " << posY << " " << velX << " " << velY << " " << colorR << " " << colorG << " " << colorB << " "
+                      << " " << width << " " << hegiht << std::endl;
+        }
+
+        else
+        {
+            std::cout << "Invalid shape" << std::endl;
+            exit(-1);
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
+    loadFromFile("input.txt");
+
     const int wWidth = 800;
     const int wHeight = 600;
     sf::RenderWindow window(sf::VideoMode(wWidth, wHeight), "SFML works!");
