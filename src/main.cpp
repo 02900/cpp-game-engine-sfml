@@ -8,14 +8,14 @@
 #include <SFML/Graphics.hpp>
 
 struct Shape {
-  std::string name;
+  char name[255];
   int posX, posY;
   int velX, velY;
   float color[3];
 
-  Shape(const std::string &name, int posX, int posY, int velX, int velY,
-        float color[3])
-      : name(name), posX(posX), posY(posY), velX(velX), velY(velY) {
+  Shape(char name[255], int posX, int posY, int velX, int velY, float color[3])
+      : posX(posX), posY(posY), velX(velX), velY(velY) {
+    strcpy(this->name, name);
     this->color[0] = color[0];
     this->color[1] = color[1];
     this->color[2] = color[2];
@@ -26,10 +26,10 @@ struct Circle : public Shape {
   int radius;
   sf::CircleShape circle;
 
-  Circle(const std::string &name, int posX, int posY, int velX, int velY,
-         float color[3], int radius)
+  Circle(char name[255], int posX, int posY, int velX, int velY, float color[3],
+         int radius)
       : Shape(name, posX, posY, velX, velY, color), radius(radius) {
-    circle = sf::CircleShape(radius, 20);
+    circle = sf::CircleShape(radius, 16);
   }
 };
 
@@ -37,7 +37,7 @@ struct Rectangle : public Shape {
   int width, height;
   sf::RectangleShape rect;
 
-  Rectangle(const std::string &name, int posX, int posY, int velX, int velY,
+  Rectangle(char name[255], int posX, int posY, int velX, int velY,
             float color[3], int width, int height)
       : Shape(name, posX, posY, velX, velY, color), width(width),
         height(height) {
@@ -71,7 +71,7 @@ void loadFromFile(const std::string &filename) {
             << " Font color: " << fontColorR << " " << fontColorG << " "
             << fontColorB << std::endl;
 
-  std::string name;
+  char name[255];
   int posX, posY;
   int velX, velY;
   int colorR, colorG, colorB;
@@ -80,9 +80,9 @@ void loadFromFile(const std::string &filename) {
 
   while (fin >> lineID) {
     fin >> name >> posX >> posY >> velX >> velY >> colorR >> colorG >> colorB;
-    std::cout << lineID << " " << name << " " << posX << " " << posY << " "
-              << velX << " " << velY << " " << colorR << " " << colorG << " "
-              << colorB << " ";
+    // std::cout << lineID << " " << name << " " << posX << " " << posY << " "
+    //           << velX << " " << velY << " " << colorR << " " << colorG << " "
+    //           << colorB << " ";
 
     float color[3] = {colorR / 256.0f, colorG / 256.0f, colorB / 256.0f};
 
@@ -126,11 +126,6 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  sf::Text text("Hello World", myFont, 30);
-  text.setPosition(0, wHeight - (float)text.getCharacterSize());
-
-  char displayString[255] = "Sample Text";
-
   while (window.isOpen()) {
     sf::Event event;
     while (window.pollEvent(event)) {
@@ -149,12 +144,12 @@ int main(int argc, char *argv[]) {
     ImGui::SFML::Update(window, deltaClock.restart());
 
     ImGui::Begin("Settings");
-    ImGui::InputText("Display String", displayString, 255);
-    if (ImGui::Button("Set Text"))
-      text.setString(displayString);
 
     for (auto &shape : circle_shapes) {
-      if (ImGui::TreeNode(shape.name.c_str())) {
+      if (ImGui::TreeNode(shape.name)) {
+        ImGui::InputText("Shape Name", shape.name, 255);
+        ImGui::SliderInt("VX", &shape.velX, -8, 8);
+        ImGui::SliderInt("VY", &shape.velY, -8, 8);
         ImGui::SliderInt("Circle Radius", &shape.radius, 0, 100);
         ImGui::ColorEdit3("Color Circle", shape.color);
         ImGui::TreePop();
@@ -162,7 +157,10 @@ int main(int argc, char *argv[]) {
     }
 
     for (auto &shape : rect_shapes) {
-      if (ImGui::TreeNode(shape.name.c_str())) {
+      if (ImGui::TreeNode(shape.name)) {
+        ImGui::InputText("Shape Name", shape.name, 255);
+        ImGui::SliderInt("VX", &shape.velX, -8, 8);
+        ImGui::SliderInt("VY", &shape.velY, -8, 8);
         ImGui::SliderInt("Width", &shape.width, 0, 100);
         ImGui::SliderInt("Height", &shape.height, 0, 100);
         ImGui::ColorEdit3("Color Rect", shape.color);
@@ -188,6 +186,12 @@ int main(int argc, char *argv[]) {
       shape.circle.setFillColor(sf::Color(
           shape.color[0] * 255, shape.color[1] * 255, shape.color[2] * 255));
       window.draw(shape.circle);
+
+      sf::Text text(shape.name, myFont, 30);
+      sf::FloatRect textBounds = text.getGlobalBounds();
+      text.setPosition(shape.posX + (shape.radius - textBounds.width / 2),
+                       shape.posY - text.getCharacterSize());
+      window.draw(text);
     }
 
     for (auto &shape : rect_shapes) {
@@ -204,9 +208,14 @@ int main(int argc, char *argv[]) {
       shape.rect.setFillColor(sf::Color(
           shape.color[0] * 255, shape.color[1] * 255, shape.color[2] * 255));
       window.draw(shape.rect);
+
+      sf::Text text(shape.name, myFont, 30);
+      sf::FloatRect textBounds = text.getGlobalBounds();
+      text.setPosition(shape.posX + (shape.width / 2 - textBounds.width / 2),
+                       shape.posY - text.getCharacterSize());
+      window.draw(text);
     }
 
-    window.draw(text);
     ImGui::SFML::Render(window);
     window.display();
   }
