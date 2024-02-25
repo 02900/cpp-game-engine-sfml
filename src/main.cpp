@@ -1,107 +1,225 @@
+#include <fstream>
 #include <iostream>
 #include <memory>
-#include <fstream>
+#include <vector>
 
-#include <SFML/Graphics.hpp>
-#include "imgui.h"
 #include "imgui-SFML.h"
+#include "imgui.h"
+#include <SFML/Graphics.hpp>
 
-int main(int argc, char *argv[])
-{
-    const int wWidth = 800;
-    const int wHeight = 600;
-    sf::RenderWindow window(sf::VideoMode(wWidth, wHeight), "SFML works!");
-    window.setFramerateLimit(60);
+struct Shape {
+  char id[255];
+  char name[255];
+  int posX, posY;
+  int velX, velY;
+  float color[3];
 
-    ImGui::SFML::Init(window);
-    sf::Clock deltaClock;
+  Shape(char name[255], int posX, int posY, int velX, int velY, float color[3])
+      : posX(posX), posY(posY), velX(velX), velY(velY) {
+    strcpy(this->id, name);
+    strcpy(this->name, name);
+    this->color[0] = color[0];
+    this->color[1] = color[1];
+    this->color[2] = color[2];
+  }
+};
 
-    ImGui::GetStyle().ScaleAllSizes(1.0f);
+struct Circle : public Shape {
+  int radius;
+  sf::CircleShape circle;
 
-    float c[3] = {0.f, 1.f, 1.f};
+  Circle(char name[255], int posX, int posY, int velX, int velY, float color[3],
+         int radius)
+      : Shape(name, posX, posY, velX, velY, color), radius(radius) {
+    circle = sf::CircleShape(radius, 16);
+  }
+};
 
-    // example circle shape
-    float circleRadius = 50.f;
-    int circleSegments = 32;
-    float circleSpeedX = 1.0f;
-    float circleSpeedY = 0.5f;
-    bool drawCircle = true;
-    bool drawText = true;
+struct Rectangle : public Shape {
+  int width, height;
+  sf::RectangleShape rect;
 
-    sf::CircleShape circle(circleRadius, circleSegments);
-    circle.setPosition(wWidth / 2, wHeight / 2);
+  Rectangle(char name[255], int posX, int posY, int velX, int velY,
+            float color[3], int width, int height)
+      : Shape(name, posX, posY, velX, velY, color), width(width),
+        height(height) {
+    rect = sf::RectangleShape(sf::Vector2f(width, height));
+  }
+};
 
-    sf::Font myFont;
-    if (!myFont.loadFromFile("bin/fonts/font.ttf"))
-    {
-        std::cout << "Error loading font\n";
-        exit(-1);
+std::vector<Circle> circle_shapes;
+std::vector<Rectangle> rect_shapes;
+
+void loadFromFile(const std::string &filename) {
+  std::ifstream fin(filename);
+
+  if (!fin.is_open()) {
+    std::cout << "Error opening file: " << filename << std::endl;
+    exit(-1);
+  }
+
+  std::string lineID;
+  int wWidth, wHeight;
+  fin >> lineID >> wWidth >> wHeight;
+  std::cout << "Window width: " << wWidth << " Window height: " << wHeight
+            << std::endl;
+
+  std::string fontPath;
+  int fontSize;
+  int fontColorR, fontColorG, fontColorB;
+  fin >> lineID >> fontPath >> fontSize >> fontColorR >> fontColorG >>
+      fontColorB;
+  std::cout << "Font path: " << fontPath << " Font size: " << fontSize
+            << " Font color: " << fontColorR << " " << fontColorG << " "
+            << fontColorB << std::endl;
+
+  char name[255];
+  int posX, posY;
+  int velX, velY;
+  int colorR, colorG, colorB;
+  int radius;
+  int width, height;
+
+  while (fin >> lineID) {
+    fin >> name >> posX >> posY >> velX >> velY >> colorR >> colorG >> colorB;
+    // std::cout << lineID << " " << name << " " << posX << " " << posY << " "
+    //           << velX << " " << velY << " " << colorR << " " << colorG << " "
+    //           << colorB << " ";
+
+    float color[3] = {colorR / 256.0f, colorG / 256.0f, colorB / 256.0f};
+
+    if (lineID == "Circle") {
+      fin >> radius;
+      std::cout << radius << std::endl;
+      circle_shapes.push_back(
+          Circle({name, posX, posY, velX, velY, color, radius}));
     }
 
-    sf::Text text("Hello World", myFont, 30);
-    text.setPosition(0, wHeight - (float)text.getCharacterSize());
-
-    char displayString[255] = "Sample Text";
-
-    while (window.isOpen())
-    {
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            ImGui::SFML::ProcessEvent(window, event);
-
-            if (event.type == sf::Event::Closed)
-                window.close();
-
-            if (event.type == sf::Event::KeyPressed)
-            {
-                std::cout << "Key pressed: " << event.key.code << std::endl;
-
-                if (event.key.code == sf::Keyboard::X)
-                {
-                    circleSpeedX *= -1.0f;
-                }
-            }
-        }
-
-        ImGui::SFML::Update(window, deltaClock.restart());
-
-        ImGui::Begin("Sample window");
-        ImGui::Text("Hello World");
-        ImGui::Checkbox("Draw Circle", &drawCircle);
-        ImGui::SameLine();
-        ImGui::Checkbox("Draw Text", &drawText);
-        ImGui::SliderFloat("Circle Radius", &circleRadius, 0.0f, 100.0f);
-        ImGui::SliderInt("Circle Segments", &circleSegments, 3, 64);
-        ImGui::ColorEdit3("Color Circle", c);
-        ImGui::InputText("Display String", displayString, 255);
-
-        if (ImGui::Button("Set Text"))
-            text.setString(displayString);
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Reset Circle"))
-            circle.setPosition(0, 0);
-
-        ImGui::End();
-
-        circle.setFillColor(sf::Color(c[0] * 255, c[1] * 255, c[2] * 255));
-        circle.setPointCount(circleSegments);
-        circle.setRadius(circleRadius);
-
-        circle.setPosition(circle.getPosition().x + circleSpeedX, circle.getPosition().y + circleSpeedY);
-
-        window.clear();
-        if (drawCircle)
-            window.draw(circle);
-
-        if (drawText)
-            window.draw(text);
-
-        ImGui::SFML::Render(window);
-
-        window.display();
+    else if (lineID == "Rectangle") {
+      fin >> width >> height;
+      std::cout << width << " " << height << std::endl;
+      rect_shapes.push_back(
+          Rectangle({name, posX, posY, velX, velY, color, width, height}));
     }
-    return 0;
+
+    else {
+      std::cout << "Invalid shape" << std::endl;
+      exit(-1);
+    }
+  }
+}
+
+int main(int argc, char *argv[]) {
+  loadFromFile("input.txt");
+
+  const int wWidth = 800;
+  const int wHeight = 600;
+  sf::RenderWindow window(sf::VideoMode(wWidth, wHeight), "SFML works!");
+  window.setFramerateLimit(60);
+
+  ImGui::SFML::Init(window);
+  sf::Clock deltaClock;
+
+  ImGui::GetStyle().ScaleAllSizes(1.0f);
+
+  sf::Font myFont;
+  if (!myFont.loadFromFile("bin/fonts/font.ttf")) {
+    std::cout << "Error loading font\n";
+    exit(-1);
+  }
+
+  while (window.isOpen()) {
+    sf::Event event;
+    while (window.pollEvent(event)) {
+      ImGui::SFML::ProcessEvent(window, event);
+
+      if (event.type == sf::Event::Closed)
+        window.close();
+
+      // if (event.type == sf::Event::KeyPressed) {
+      // std::cout << "Key pressed: " << event.key.code << std::endl;
+      // if (event.key.code == sf::Keyboard::X) {
+      // }
+      // }
+    }
+
+    ImGui::SFML::Update(window, deltaClock.restart());
+
+    ImGui::Begin("Settings");
+
+    for (auto &shape : circle_shapes) {
+      if (ImGui::TreeNode(shape.id)) {
+        ImGui::InputText("Shape Name", shape.name, 255);
+        ImGui::SliderInt("VX", &shape.velX, -8, 8);
+        ImGui::SliderInt("VY", &shape.velY, -8, 8);
+        ImGui::SliderInt("Circle Radius", &shape.radius, 0, 100);
+        ImGui::ColorEdit3("Color Circle", shape.color);
+        ImGui::TreePop();
+      }
+    }
+
+    for (auto &shape : rect_shapes) {
+      if (ImGui::TreeNode(shape.id)) {
+        ImGui::InputText("Shape Name", shape.name, 255);
+        ImGui::SliderInt("VX", &shape.velX, -8, 8);
+        ImGui::SliderInt("VY", &shape.velY, -8, 8);
+        ImGui::SliderInt("Width", &shape.width, 0, 100);
+        ImGui::SliderInt("Height", &shape.height, 0, 100);
+        ImGui::ColorEdit3("Color Rect", shape.color);
+        ImGui::TreePop();
+      }
+    }
+
+    ImGui::End();
+
+    window.clear();
+
+    for (auto &shape : circle_shapes) {
+      if (shape.posX < 0 || shape.posX > wWidth - 2 * shape.radius)
+        shape.velX *= -1;
+
+      if (shape.posY < 0 || shape.posY > wHeight - 2 * shape.radius)
+        shape.velY *= -1;
+
+      shape.posX += shape.velX;
+      shape.posY += shape.velY;
+      shape.circle.setPosition(shape.posX, shape.posY);
+      shape.circle.setRadius(shape.radius);
+      shape.circle.setFillColor(sf::Color(
+          shape.color[0] * 255, shape.color[1] * 255, shape.color[2] * 255));
+      window.draw(shape.circle);
+
+      sf::Text text(shape.name, myFont, 30);
+      sf::FloatRect textBounds = text.getGlobalBounds();
+      text.setPosition(shape.posX + (shape.radius - textBounds.width / 2),
+                       shape.posY + (shape.radius - textBounds.height / 2));
+      window.draw(text);
+    }
+
+    for (auto &shape : rect_shapes) {
+      if (shape.posX < 0 || shape.posX > wWidth - shape.width)
+        shape.velX *= -1;
+
+      if (shape.posY < 0 || shape.posY > wHeight - shape.height)
+        shape.velY *= -1;
+
+      shape.posX += shape.velX;
+      shape.posY += shape.velY;
+      shape.rect.setPosition(shape.posX, shape.posY);
+      shape.rect.setSize(sf::Vector2f(shape.width, shape.height));
+      shape.rect.setFillColor(sf::Color(
+          shape.color[0] * 255, shape.color[1] * 255, shape.color[2] * 255));
+      window.draw(shape.rect);
+
+      sf::Text text(shape.name, myFont, 30);
+      sf::FloatRect textBounds = text.getGlobalBounds();
+      text.setPosition(shape.posX + (shape.width / 2 - textBounds.width / 2),
+                       shape.posY + (shape.height / 2 - textBounds.height / 2));
+      window.draw(text);
+    }
+
+    ImGui::SFML::Render(window);
+    window.display();
+  }
+  return 0;
 }
