@@ -120,19 +120,6 @@ int main(int argc, char *argv[]) {
 
   ImGui::GetStyle().ScaleAllSizes(1.0f);
 
-  float c[3] = {0.f, 1.f, 1.f};
-
-  // example circle shape
-  float circleRadius = 50.f;
-  int circleSegments = 32;
-  float circleSpeedX = 1.0f;
-  float circleSpeedY = 0.5f;
-  bool drawCircle = true;
-  bool drawText = true;
-
-  sf::CircleShape circle(circleRadius, circleSegments);
-  circle.setPosition(wWidth / 2, wHeight / 2);
-
   sf::Font myFont;
   if (!myFont.loadFromFile("bin/fonts/font.ttf")) {
     std::cout << "Error loading font\n";
@@ -152,24 +139,19 @@ int main(int argc, char *argv[]) {
       if (event.type == sf::Event::Closed)
         window.close();
 
-      if (event.type == sf::Event::KeyPressed) {
-        std::cout << "Key pressed: " << event.key.code << std::endl;
-
-        if (event.key.code == sf::Keyboard::X) {
-          circleSpeedX *= -1.0f;
-        }
-      }
+      // if (event.type == sf::Event::KeyPressed) {
+      // std::cout << "Key pressed: " << event.key.code << std::endl;
+      // if (event.key.code == sf::Keyboard::X) {
+      // }
+      // }
     }
 
     ImGui::SFML::Update(window, deltaClock.restart());
 
     ImGui::Begin("Settings");
-    
-    ImGui::Checkbox("Draw Text", &drawText);
     ImGui::InputText("Display String", displayString, 255);
     if (ImGui::Button("Set Text"))
       text.setString(displayString);
-
 
     for (auto &shape : circle_shapes) {
       if (ImGui::TreeNode(shape.name.c_str())) {
@@ -190,12 +172,17 @@ int main(int argc, char *argv[]) {
 
     ImGui::End();
 
-    circle.setPosition(circle.getPosition().x + circleSpeedX,
-                       circle.getPosition().y + circleSpeedY);
-
     window.clear();
 
     for (auto &shape : circle_shapes) {
+      if (shape.posX < 0 || shape.posX > wWidth - 2 * shape.radius)
+        shape.velX *= -1;
+
+      if (shape.posY < 0 || shape.posY > wHeight - 2 * shape.radius)
+        shape.velY *= -1;
+
+      shape.posX += shape.velX;
+      shape.posY += shape.velY;
       shape.circle.setPosition(shape.posX, shape.posY);
       shape.circle.setRadius(shape.radius);
       shape.circle.setFillColor(sf::Color(
@@ -204,6 +191,14 @@ int main(int argc, char *argv[]) {
     }
 
     for (auto &shape : rect_shapes) {
+      if (shape.posX < 0 || shape.posX > wWidth - shape.width)
+        shape.velX *= -1;
+
+      if (shape.posY < 0 || shape.posY > wHeight - shape.height)
+        shape.velY *= -1;
+
+      shape.posX += shape.velX;
+      shape.posY += shape.velY;
       shape.rect.setPosition(shape.posX, shape.posY);
       shape.rect.setSize(sf::Vector2f(shape.width, shape.height));
       shape.rect.setFillColor(sf::Color(
@@ -211,11 +206,8 @@ int main(int argc, char *argv[]) {
       window.draw(shape.rect);
     }
 
-    if (drawText)
-      window.draw(text);
-
+    window.draw(text);
     ImGui::SFML::Render(window);
-
     window.display();
   }
   return 0;
