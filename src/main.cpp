@@ -8,6 +8,7 @@
 #include <SFML/Graphics.hpp>
 
 struct Shape {
+  char id[255];
   char name[255];
   int posX, posY;
   int velX, velY;
@@ -15,6 +16,7 @@ struct Shape {
 
   Shape(char name[255], int posX, int posY, int velX, int velY, float color[3])
       : posX(posX), posY(posY), velX(velX), velY(velY) {
+    strcpy(this->id, name);
     strcpy(this->name, name);
     this->color[0] = color[0];
     this->color[1] = color[1];
@@ -146,7 +148,7 @@ int main(int argc, char *argv[]) {
     ImGui::Begin("Settings");
 
     for (auto &shape : circle_shapes) {
-      if (ImGui::TreeNode(shape.name)) {
+      if (ImGui::TreeNode(shape.id)) {
         ImGui::InputText("Shape Name", shape.name, 255);
         ImGui::SliderInt("VX", &shape.velX, -8, 8);
         ImGui::SliderInt("VY", &shape.velY, -8, 8);
@@ -157,7 +159,7 @@ int main(int argc, char *argv[]) {
     }
 
     for (auto &shape : rect_shapes) {
-      if (ImGui::TreeNode(shape.name)) {
+      if (ImGui::TreeNode(shape.id)) {
         ImGui::InputText("Shape Name", shape.name, 255);
         ImGui::SliderInt("VX", &shape.velX, -8, 8);
         ImGui::SliderInt("VY", &shape.velY, -8, 8);
@@ -190,7 +192,7 @@ int main(int argc, char *argv[]) {
       sf::Text text(shape.name, myFont, 30);
       sf::FloatRect textBounds = text.getGlobalBounds();
       text.setPosition(shape.posX + (shape.radius - textBounds.width / 2),
-                       shape.posY - text.getCharacterSize());
+                       shape.posY + (shape.radius - textBounds.height / 2));
       window.draw(text);
     }
 
@@ -212,7 +214,7 @@ int main(int argc, char *argv[]) {
       sf::Text text(shape.name, myFont, 30);
       sf::FloatRect textBounds = text.getGlobalBounds();
       text.setPosition(shape.posX + (shape.width / 2 - textBounds.width / 2),
-                       shape.posY - text.getCharacterSize());
+                       shape.posY + (shape.height / 2 - textBounds.height / 2));
       window.draw(text);
     }
 
